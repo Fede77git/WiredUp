@@ -8,11 +8,17 @@ public class PlayerController : MonoBehaviour
     public float velocidad = 5f;
     public float velocidadRotacion = 15f;
 
-    
+    public float fuerzaSalto = 12f; 
+    public float alturaDeteccionSuelo = 1.1f; 
+    public LayerMask capasSuelo;
+
     public Transform camaraPrincipal; // Main Camera
 
     private Rigidbody rb;
     private Vector2 inputMovimiento;
+    private bool estaEnElSuelo = false;
+
+    public bool isSwinging = false;
 
     void Start()
     {
@@ -29,15 +35,36 @@ public class PlayerController : MonoBehaviour
         float x = Input.GetAxisRaw("Horizontal");
         float z = Input.GetAxisRaw("Vertical");
         inputMovimiento = new Vector2(x, z).normalized;
+
+       
+        estaEnElSuelo = Physics.Raycast(transform.position, Vector3.down, alturaDeteccionSuelo, capasSuelo);
+
+        
+        Debug.DrawRay(transform.position, Vector3.down * alturaDeteccionSuelo, estaEnElSuelo ? Color.green : Color.red);
+
+        
+        if (Input.GetKeyDown(KeyCode.Space) && estaEnElSuelo)
+        {
+            Saltar();
+        }
+
+
     }
 
     void FixedUpdate()
     {
-        MoverJugador();
+        if (!isSwinging)
+        {
+            MoverJugador();
+        }
+
+
     }
 
     void MoverJugador()
     {
+
+
         if (inputMovimiento.magnitude >= 0.1f)
         {
             // Calculamos el ángulo hacia donde mira la cámara
@@ -59,4 +86,14 @@ public class PlayerController : MonoBehaviour
             rb.velocity = new Vector3(0, rb.velocity.y, 0);
         }
     }
+
+    void Saltar()
+    {
+        
+        rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+
+       
+        rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
+    }
+
 }
