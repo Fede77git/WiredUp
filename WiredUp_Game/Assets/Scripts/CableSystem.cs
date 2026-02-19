@@ -4,23 +4,27 @@ using UnityEngine.UI;
 
 public class CableSystem : MonoBehaviour
 {
-    
+    //base
+
     public float distanciaMaxima = 30f; 
     public LayerMask capasEnganchables;
     public Transform salidaDelCable;
     public Camera camaraPrincipal;
     public LineRenderer lineaCable;
 
-
+    //fisicas cable
     public float fuerzaResorte = 10f; // q tan fuerte tira (Spring)
     public float amortiguacion = 7f;  // q tanto frena el rebote (Damper)
     public float velocidadRebobinado = 5f; // Para subir paredes
 
     private Rigidbody rb;
 
-    public Image imagenMira; 
-    public Color colorRangoValido = Color.green;
-    public Color colorRangoInvalido = Color.white;
+    // UI
+    public Image imagenMira;
+    public Color colorNormal = Color.green;
+    public Color colorMagnetico = Color.cyan;
+    public Color colorCableNormal = Color.white;
+    public Color colorCableMagnetico = Color.cyan;
 
     private SpringJoint joint; // La articulación física
     private Vector3 puntoDeEnganche;
@@ -37,9 +41,23 @@ public class CableSystem : MonoBehaviour
 
     public GameObject efectoImpacto;
 
+
+    // estados electrico /magnetico
+
+    public bool modoMagnetico = false; // se cambia mediante el Nodo de energiaa
+    public float fuerzaDeAtraccion = 25f;
+    public float distanciaAgarre = 2.5f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        if (lineaCable != null) lineaCable.enabled = false;
+    }
+
+
+    public void CambiarEstadoElectrico(bool activar)
+    {
+        modoMagnetico = activar;
     }
 
     void Update()
@@ -108,53 +126,99 @@ public class CableSystem : MonoBehaviour
     {
         // se lanza un rayo invisible todo el tiempo para ver q hay en el centro
         Ray rayo = camaraPrincipal.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-
-        // if el rayo pega en algo valido dentro de la distancia
         if (Physics.Raycast(rayo, out hitDetectado, distanciaMaxima, capasEnganchables))
         {
-            if (imagenMira != null) imagenMira.color = colorRangoValido; // Verde
+            int capaTocada = hitDetectado.collider.gameObject.layer;
+            int layerEnganchable = LayerMask.NameToLayer("Enganchable");
+            int layerCaja = LayerMask.NameToLayer("Caja");
+
+            // MODO NORMAL
+           
+            if (!modoMagnetico && capaTocada == layerEnganchable)
+            {
+                imagenMira.color = colorNormal;
+            }
+            // MODO MAGNETICO
+            else if (modoMagnetico && capaTocada == layerCaja)
+            {
+                imagenMira.color = colorMagnetico;
+            }
+            else
+            {
+                imagenMira.color = Color.white;
+            }
         }
         else
         {
-            if (imagenMira != null) imagenMira.color = colorRangoInvalido; // Blanco
+            imagenMira.color = Color.white;
         }
     }
 
 
     void DispararCable()
     {
-        // usamos el hitDetectado que ya calculamos en ActualizarMira
-        // check si la mira estaba en verde 
-        if (imagenMira.color == colorRangoValido)
+        
+        if (imagenMira.color == Color.white) return;
+
+        
+        int capaTocado = hitDetectado.collider.gameObject.layer;
+
+        
+        int layerEnganchable = LayerMask.NameToLayer("Enganchable");
+        int layerCaja = LayerMask.NameToLayer("Caja");
+
+        puntoDeEnganche = hitDetectado.point;
+        estaEnganchado = true;
+
+        
+        if (modoMagnetico && capaTocado == layerCaja)
         {
-            puntoDeEnganche = hitDetectado.point;
-            estaEnganchado = true;
-           
-            controladorMovimiento.isSwinging = true;
-
-            if (efectoImpacto != null)
+            // MODO ATRAER CAJA
+            Rigidbody rbCaja = hitDetectado.collider.GetComponent<Rigidbody>();
+            if (rbCaja != null)
             {
-                Instantiate(efectoImpacto, puntoDeEnganche, Quaternion.identity);
+                joint = gameObject.AddComponent<SpringJoint>();
+                joint.connectedBody = rbCaja;
+                joint.autoConfigureConnectedAnchor = false;
+                joint.anchor = new Vector3(0, 0.5f, distanciaAgarre);
+                joint.connectedAnchor = Vector3.zero; 
+
+                joint.spring = fuerzaDeAtraccion;
+                joint.damper = 5f;
+                joint.maxDistance = 0f;
+
+                // cambio el color del cable visual
+                lineaCable.startColor = colorCableMagnetico;
+                lineaCable.endColor = colorCableMagnetico;
             }
+        }
+        else if (!modoMagnetico && capaTocado == layerEnganchable)
+        {
+            // MODO COLGARSE 
+            if (controladorMovimiento != null) controladorMovimiento.isSwinging = true;
 
-            // robot mira hacia el punto de impacto 
-            //Vector3 objetivoMirada = new Vector3(puntoDeEnganche.x, transform.position.y, puntoDeEnganche.z);
-            //transform.LookAt(objetivoMirada);
-
-            // joint
             joint = gameObject.AddComponent<SpringJoint>();
             joint.autoConfigureConnectedAnchor = false;
+            joint.anchor = Vector3.zero;
             joint.connectedAnchor = puntoDeEnganche;
 
-            float distanciaAlPunto = Vector3.Distance(transform.position, puntoDeEnganche);
-            joint.maxDistance = distanciaAlPunto * 0.8f;
-            joint.minDistance = 0f;
+            float dist = Vector3.Distance(transform.position, puntoDeEnganche);
+            joint.maxDistance = dist * 0.8f;
             joint.spring = fuerzaResorte;
             joint.damper = amortiguacion;
-            joint.massScale = 4.5f;
 
-            lineaCable.enabled = true;
+            lineaCable.startColor = colorCableNormal;
+            lineaCable.endColor = colorCableNormal;
+        
+
+    }
+        else
+        {
+            // Si tocamos algo que no corresponde al modo actual, cancelamos
+            estaEnganchado = false;
         }
+
+        if (estaEnganchado && lineaCable != null) lineaCable.enabled = true;
     }
 
 
@@ -173,8 +237,8 @@ public class CableSystem : MonoBehaviour
     void CortarCable()
     {
         estaEnganchado = false;
-        controladorMovimiento.isSwinging = false;
-        lineaCable.enabled = false;
+        if (controladorMovimiento != null) controladorMovimiento.isSwinging = false;
+        if (lineaCable != null) lineaCable.enabled = false;
 
         // se destruye el joint para soltar
         if (joint != null)
@@ -186,12 +250,15 @@ public class CableSystem : MonoBehaviour
 
     void DibujarCable()
     {
-        // si no hay joint no dibuja
-        if (!joint) return;
-        // punto A: El Robot , o punto de origen
         lineaCable.SetPosition(0, salidaDelCable.position);
-
-        // punto B: donde pega el rayo
-        lineaCable.SetPosition(1, puntoDeEnganche);
+        
+        if (modoMagnetico && joint != null && joint.connectedBody != null)
+        {
+            lineaCable.SetPosition(1, joint.connectedBody.transform.position);
+        }
+        else
+        {
+            lineaCable.SetPosition(1, puntoDeEnganche);
+        }
     }
 }
