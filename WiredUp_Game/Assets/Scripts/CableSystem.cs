@@ -47,6 +47,7 @@ public class CableSystem : MonoBehaviour
     public bool modoMagnetico = false; // se cambia mediante el Nodo de energiaa
     public float fuerzaDeAtraccion = 25f;
     public float distanciaAgarre = 2.5f;
+    public float fuerzaLanzamiento = 15f;
 
     void Start()
     {
@@ -236,6 +237,20 @@ public class CableSystem : MonoBehaviour
 
     void CortarCable()
     {
+
+        // si el cable existe y hay una caja conectad
+        if (modoMagnetico && joint != null && joint.connectedBody != null)
+        {
+            Rigidbody rbCaja = joint.connectedBody;
+
+            // hacia dodne mira el player
+            Vector3 direccionTiro = camaraPrincipal.transform.forward;
+
+            // impulso a la caja para q vuele
+            rbCaja.AddForce(direccionTiro * fuerzaLanzamiento, ForceMode.Impulse);
+        }
+
+
         estaEnganchado = false;
         if (controladorMovimiento != null) controladorMovimiento.isSwinging = false;
         if (lineaCable != null) lineaCable.enabled = false;
