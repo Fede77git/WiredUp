@@ -11,6 +11,10 @@ public class CableSystem : MonoBehaviour
     public Transform salidaDelCable;
     public Camera camaraPrincipal;
     public LineRenderer lineaCable;
+    public float distanciaRuptura = 35f;
+
+    public GameObject objetoEnganchado;
+
 
     //fisicas cable
     public float fuerzaResorte = 10f; // q tan fuerte tira (Spring)
@@ -27,8 +31,9 @@ public class CableSystem : MonoBehaviour
     public Color colorCableMagnetico = Color.cyan;
 
     private SpringJoint joint; // La articulación física
+    private float distanciaCuerdaInicial;
     private Vector3 puntoDeEnganche;
-    private bool estaEnganchado = false;
+    public bool estaEnganchado = false;
     private RaycastHit hitDetectado;
 
     public PlayerController controladorMovimiento;
@@ -72,24 +77,65 @@ public class CableSystem : MonoBehaviour
             DispararCable();
         }
 
-        //  detectar soltar Clic para cortar cable
+        //  detectar soltar clic para cortar cable
         if (Input.GetMouseButtonUp(0))
         {
             CortarCable();
         }
 
-        if (estaEnganchado && Input.GetMouseButton(1))
+        if (estaEnganchado && joint != null)
         {
-            RebobinarCable();
+            if (Input.GetMouseButton(1)) 
+            {
+                if (modoMagnetico)
+                {
+                    
+                    joint.spring = fuerzaDeAtraccion;
+                    joint.maxDistance = 0f;
+                }
+                else
+                {
+                    // 3
+                    joint.maxDistance -= Time.deltaTime * 15f;
+
+                    
+                    if (joint.maxDistance < 2f) joint.maxDistance = 2f;
+                }
+            }
+            else 
+            {
+                if (modoMagnetico)
+                {
+                    
+                    joint.spring = 0f;
+                }
+               
+            }
         }
+
+        // corte de cable
+        if (estaEnganchado)
+        {
+            float distanciaActual = 0f;
+            if (modoMagnetico && joint != null && joint.connectedBody != null)
+                distanciaActual = Vector3.Distance(transform.position, joint.connectedBody.transform.position);
+            else
+                distanciaActual = Vector3.Distance(transform.position, puntoDeEnganche);
+
+            if (distanciaActual > distanciaRuptura)
+            {
+                CortarCable();
+                Debug.Log("se corto el cable");
+            }
+        }
+
 
 
         if (estaEnganchado && Input.GetKeyDown(KeyCode.Space))
         {
             CortarCable();
-            //  empujon
-            Vector3 direccionSalto = camaraPrincipal.transform.forward + Vector3.up;
-            rb.AddForce(direccionSalto.normalized * impulsoSalto, ForceMode.Impulse);
+            Vector3 impulso = camaraPrincipal.transform.forward + (Vector3.up * 0.5f);
+            rb.AddForce(impulso.normalized * impulsoSalto, ForceMode.Impulse);
         }
 
         // dibujar el cable si esta activo
@@ -170,8 +216,9 @@ public class CableSystem : MonoBehaviour
 
         puntoDeEnganche = hitDetectado.point;
         estaEnganchado = true;
+        objetoEnganchado = hitDetectado.collider.gameObject;
 
-        
+
         if (modoMagnetico && capaTocado == layerCaja)
         {
             // MODO ATRAER CAJA
@@ -182,11 +229,11 @@ public class CableSystem : MonoBehaviour
                 joint.connectedBody = rbCaja;
                 joint.autoConfigureConnectedAnchor = false;
                 joint.anchor = new Vector3(0, 0.5f, distanciaAgarre);
-                joint.connectedAnchor = Vector3.zero; 
+                joint.connectedAnchor = Vector3.zero;
 
-                joint.spring = fuerzaDeAtraccion;
+                joint.spring = 0f;
                 joint.damper = 5f;
-                joint.maxDistance = 0f;
+                joint.maxDistance = distanciaCuerdaInicial;
 
                 // cambio el color del cable visual
                 lineaCable.startColor = colorCableMagnetico;
@@ -200,19 +247,24 @@ public class CableSystem : MonoBehaviour
 
             joint = gameObject.AddComponent<SpringJoint>();
             joint.autoConfigureConnectedAnchor = false;
+
             joint.anchor = Vector3.zero;
             joint.connectedAnchor = puntoDeEnganche;
 
-            float dist = Vector3.Distance(transform.position, puntoDeEnganche);
-            joint.maxDistance = dist * 0.8f;
-            joint.spring = fuerzaResorte;
-            joint.damper = amortiguacion;
+
+            joint.maxDistance = distanciaCuerdaInicial;
+            joint.minDistance = 0f;
+
+            
+            joint.spring = 4.5f;
+            joint.damper = 7f;
+            joint.massScale = 4.5f;
 
             lineaCable.startColor = colorCableNormal;
             lineaCable.endColor = colorCableNormal;
-        
 
-    }
+
+        }
         else
         {
             // Si tocamos algo que no corresponde al modo actual, cancelamos
@@ -260,6 +312,8 @@ public class CableSystem : MonoBehaviour
         {
             Destroy(joint);
         }
+
+        objetoEnganchado = null;
 
     }
 
