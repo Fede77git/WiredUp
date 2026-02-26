@@ -30,7 +30,7 @@ public class InterruptorPresion : MonoBehaviour
             {
                 if (meshBoton != null) meshBoton.material.color = colorEncendido;
                 alPresionar.Invoke();
-                Debug.Log("¡Interruptor ACTIVADO!");
+                
             }
         }
     }
@@ -45,7 +45,7 @@ public class InterruptorPresion : MonoBehaviour
                 objetosEncima = 0;
                 if (meshBoton != null) meshBoton.material.color = colorApagado;
                 alSoltar.Invoke();
-                Debug.Log("Interruptor APAGADO.");
+                
             }
         }
     }

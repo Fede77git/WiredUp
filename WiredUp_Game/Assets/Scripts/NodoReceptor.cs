@@ -25,7 +25,7 @@ public class NodoReceptor : MonoBehaviour
             if (meshReceptor != null) meshReceptor.material.color = colorEncendido;
 
             alRecibirEnergia.Invoke(); // puerta o mecanismo abierto
-            Debug.Log("puerta o mecanismo abierto");
+            
         }
     }
 }

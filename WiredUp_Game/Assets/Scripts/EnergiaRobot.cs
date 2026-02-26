@@ -9,6 +9,10 @@ public class EnergiaRobot : MonoBehaviour
     public Color colorApagado = Color.white;
     public Color colorEnergizado = Color.yellow;
 
+
+    public float tiempoBateria = 3f; 
+    private float temporizador = 0f;
+
     //estado no tocar
     public bool tieneEnergia = false;
 
@@ -17,19 +21,29 @@ public class EnergiaRobot : MonoBehaviour
 
     void Update()
     {
-        // check si toca emisor con corriente
         bool cableEnEmisor = cable.estaEnganchado && cable.objetoEnganchado != null && cable.objetoEnganchado.CompareTag("Emisor");
 
-        // robot con energia
-        tieneEnergia = tocandoEmisor || cableEnEmisor;
+        
+        if (tocandoEmisor || cableEnEmisor)
+        {
+            temporizador = tiempoBateria; 
+        }
+        else
+        {
+            temporizador -= Time.deltaTime; 
+        }
 
-        // feedback visual
+        bool estadoAnterior = tieneEnergia;
+        tieneEnergia = temporizador > 0f; 
+
+
+        
         if (meshRobot != null)
         {
             meshRobot.material.color = tieneEnergia ? colorEnergizado : colorApagado;
         }
 
-        // completa el circuito? 7 9
+        
         if (tieneEnergia)
         {
             bool cableEnReceptor = cable.estaEnganchado && cable.objetoEnganchado != null && cable.objetoEnganchado.CompareTag("Receptor");
@@ -53,7 +67,6 @@ public class EnergiaRobot : MonoBehaviour
         if (objetoTocado == col.gameObject) objetoTocado = null;
     }
 
-    // abrir mecanismo o puierta
     private void ActivarPuerta(GameObject receptor)
     {
         NodoReceptor nodo = receptor.GetComponent<NodoReceptor>();

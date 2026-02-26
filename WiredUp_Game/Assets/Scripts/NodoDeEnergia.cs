@@ -15,7 +15,7 @@ public class NodoDeEnergia : MonoBehaviour
             if (cable != null)
             {
                 cable.CambiarEstadoElectrico(activarMagnetismo);
-                Debug.Log("Energía cambiada. ¿Es magnético?: " + activarMagnetismo);
+                
             }
         }
     }

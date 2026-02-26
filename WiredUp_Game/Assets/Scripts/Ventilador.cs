@@ -12,7 +12,7 @@ public class Ventilador : MonoBehaviour
     private void OnTriggerStay(Collider other)
     {
 
-        Vector3 dirViento = transform.forward;
+        Vector3 dirViento = transform.right;
 
         // escudo?
         bool estaProtegido = Physics.Raycast(other.bounds.center, -dirViento, 4f, capasQueTapanElViento);

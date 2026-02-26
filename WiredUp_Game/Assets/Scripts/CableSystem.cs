@@ -17,8 +17,8 @@ public class CableSystem : MonoBehaviour
 
 
     //fisicas cable
-    public float fuerzaResorte = 10f; // q tan fuerte tira (Spring)
-    public float amortiguacion = 7f;  // q tanto frena el rebote (Damper)
+    public float fuerzaResorte = 10f; 
+    public float amortiguacion = 7f;  
     public float velocidadRebobinado = 5f; // Para subir paredes
 
     private Rigidbody rb;
@@ -30,7 +30,7 @@ public class CableSystem : MonoBehaviour
     public Color colorCableNormal = Color.white;
     public Color colorCableMagnetico = Color.cyan;
 
-    private SpringJoint joint; // La articulación física
+    private SpringJoint joint; 
     private float distanciaCuerdaInicial;
     private Vector3 puntoDeEnganche;
     public bool estaEnganchado = false;
@@ -125,7 +125,7 @@ public class CableSystem : MonoBehaviour
             if (distanciaActual > distanciaRuptura)
             {
                 CortarCable();
-                Debug.Log("se corto el cable");
+                
             }
         }
 
@@ -226,6 +226,7 @@ public class CableSystem : MonoBehaviour
             if (rbCaja != null)
             {
                 joint = gameObject.AddComponent<SpringJoint>();
+                joint.enableCollision = true;
                 joint.connectedBody = rbCaja;
                 joint.autoConfigureConnectedAnchor = false;
                 joint.anchor = new Vector3(0, 0.5f, distanciaAgarre);
@@ -267,7 +268,7 @@ public class CableSystem : MonoBehaviour
         }
         else
         {
-            // Si tocamos algo que no corresponde al modo actual, cancelamos
+            
             estaEnganchado = false;
         }
 
@@ -277,7 +278,7 @@ public class CableSystem : MonoBehaviour
 
     void RebobinarCable()
     {
-        // if tenemos un joint, reducimos su distancia máxima para subir
+        // if tenemos un joint reducimos su distancia max para subir
         if (joint != null)
         {
             joint.maxDistance -= velocidadRebobinado * Time.deltaTime;
@@ -295,10 +296,10 @@ public class CableSystem : MonoBehaviour
         {
             Rigidbody rbCaja = joint.connectedBody;
 
-            // hacia dodne mira el player
+            
             Vector3 direccionTiro = camaraPrincipal.transform.forward;
 
-            // impulso a la caja para q vuele
+            
             rbCaja.AddForce(direccionTiro * fuerzaLanzamiento, ForceMode.Impulse);
         }
 
